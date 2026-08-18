@@ -25,3 +25,22 @@ main_menu = ReplyKeyboardMarkup(
     ],
     resize_keyboard=True
 )
+
+
+plans_menu = ReplyKeyboardMarkup(
+    keyboard=[
+        [
+            KeyboardButton(text="🟢 START - 50₽")
+        ],
+        [
+            KeyboardButton(text="🔵 PRO - 100₽")
+        ],
+        [
+            KeyboardButton(text="🟣 ULTRA - 500₽")
+        ],
+        [
+            KeyboardButton(text="⬅️ Назад")
+        ]
+    ],
+    resize_keyboard=True
+)
