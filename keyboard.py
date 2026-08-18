@@ -12,7 +12,14 @@ main_menu = ReplyKeyboardMarkup(
             KeyboardButton(text="🛒 Купить сервер")
         ],
         [
-            KeyboardButton(text="🎫 Промокод"),
+            KeyboardButton(text="▶️ Запустить сервер"),
+            KeyboardButton(text="⏹ Остановить сервер")
+        ],
+        [
+            KeyboardButton(text="📟 Консоль"),
+            KeyboardButton(text="🎫 Промокод")
+        ],
+        [
             KeyboardButton(text="🆘 Поддержка")
         ]
     ],
