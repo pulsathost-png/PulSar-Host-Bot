@@ -1,4 +1,7 @@
 import asyncio
+import os
+
+from aiohttp import web
 
 from aiogram import Bot, Dispatcher
 from aiogram.types import Message
@@ -100,19 +103,31 @@ async def buy_menu(message: Message):
 
 @dp.message(lambda m: m.text == "🟢 START - 50₽")
 async def buy_start(message: Message):
-    await buy_plan(message, "START")
+
+    await buy_plan(
+        message,
+        "START"
+    )
 
 
 
 @dp.message(lambda m: m.text == "🔵 PRO - 100₽")
 async def buy_pro(message: Message):
-    await buy_plan(message, "PRO")
+
+    await buy_plan(
+        message,
+        "PRO"
+    )
 
 
 
 @dp.message(lambda m: m.text == "🟣 ULTRA - 500₽")
 async def buy_ultra(message: Message):
-    await buy_plan(message, "ULTRA")
+
+    await buy_plan(
+        message,
+        "ULTRA"
+    )
 
 
 
@@ -155,17 +170,12 @@ async def buy_plan(message, plan_name):
         f"⚙ CPU: {plan['cpu']}\n"
         "⏳ Срок: 30 дней",
         reply_markup=main_menu
-    )
-
-
-
-@dp.message(lambda m: m.text == "🖥 Мои серверы")
+    )@dp.message(lambda m: m.text == "🖥 Мои серверы")
 async def servers(message: Message):
 
     data = user_servers(
         message.from_user.id
     )
-
 
     if not data:
 
@@ -204,9 +214,11 @@ async def start_server(message: Message):
 
 
     if not servers:
+
         await message.answer(
             "❌ Нет серверов"
         )
+
         return
 
 
@@ -225,9 +237,11 @@ async def stop_server(message: Message):
 
 
     if not servers:
+
         await message.answer(
             "❌ Нет серверов"
         )
+
         return
 
 
@@ -246,9 +260,11 @@ async def restart_server(message: Message):
 
 
     if not servers:
+
         await message.answer(
             "❌ Нет серверов"
         )
+
         return
 
 
@@ -264,7 +280,7 @@ async def console(message: Message):
     await message.answer(
         "📟 Консоль\n\n"
         "Используйте:\n"
-        "/cmd status"
+        "/cmd команда"
     )
 
 
@@ -278,13 +294,15 @@ async def command(message: Message):
 
 
     if not servers:
+
         await message.answer(
             "❌ Нет серверов"
         )
+
         return
 
 
-    command = message.text.replace(
+    command_text = message.text.replace(
         "/cmd ",
         ""
     )
@@ -292,11 +310,13 @@ async def command(message: Message):
 
     result = execute_command(
         servers[0][0],
-        command
+        command_text
     )
 
 
-    await message.answer(result)
+    await message.answer(
+        result
+    )
 
 
 
@@ -307,13 +327,17 @@ async def promo(message: Message):
 
 
     if len(args) < 2:
+
         await message.answer(
             "Используйте:\n/promo КОД"
         )
+
         return
 
 
-    data = get_promo(args[1])
+    data = get_promo(
+        args[1]
+    )
 
 
     if not data:
@@ -331,7 +355,9 @@ async def promo(message: Message):
     )
 
 
-    use_promo(args[1])
+    use_promo(
+        args[1]
+    )
 
 
     await message.answer(
@@ -345,15 +371,12 @@ async def promo_button(message: Message):
 
     await message.answer(
         "🎫 Введите:\n/promo КОД"
-    )
-
-
-
-@dp.message(lambda m: m.text == "🆘 Поддержка")
+    )@dp.message(lambda m: m.text == "🆘 Поддержка")
 async def support(message: Message):
 
     await message.answer(
-        "🆘 Поддержка PulSar-Host"
+        "🆘 Поддержка PulSar-Host\n\n"
+        "Свяжитесь с администрацией."
     )
 
 
@@ -367,15 +390,70 @@ async def other(message: Message):
 
 
 
+# ===== Render Web Server =====
+
+async def health(request):
+
+    return web.Response(
+        text="PulSar-Host Bot is running 🚀"
+    )
+
+
+
+async def start_web_server():
+
+    app = web.Application()
+
+    app.router.add_get(
+        "/",
+        health
+    )
+
+
+    runner = web.AppRunner(app)
+
+    await runner.setup()
+
+
+    port = int(
+        os.environ.get(
+            "PORT",
+            10000
+        )
+    )
+
+
+    site = web.TCPSite(
+        runner,
+        "0.0.0.0",
+        port
+    )
+
+
+    await site.start()
+
+
+
 async def main():
 
     create_tables()
 
-    print("🚀 PulSar-Host Bot запущен")
+    print(
+        "🚀 PulSar-Host Bot запущен"
+    )
 
-    await dp.start_polling(bot)
+
+    await start_web_server()
+
+
+    await dp.start_polling(
+        bot
+    )
 
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+
+    asyncio.run(
+        main()
+    )
