@@ -11,7 +11,7 @@ from database import (
 
 from services.promo import create_promo
 
-from admin_keyboard import admin_menu
+from services.servers import create_server
 
 
 router = Router()
@@ -22,10 +22,8 @@ def is_admin(user_id):
 
 
 
-# Открытие админки
-
 @router.message(Command("admin"))
-async def admin(message: Message):
+async def admin_panel(message: Message):
 
     if not is_admin(message.from_user.id):
 
@@ -37,15 +35,108 @@ async def admin(message: Message):
 
 
     await message.answer(
-        "🛡 PulSar-Host Admin Panel",
-        reply_markup=admin_menu
+        "🛡 PulSar-Host Admin Panel\n\n"
+
+        "Команды:\n\n"
+
+        "🎫 Создать промокод:\n"
+        "/createpromo\n\n"
+
+        "💰 Выдать баланс:\n"
+        "/givebalance\n\n"
+
+        "🖥 Выдать сервер:\n"
+        "/giveserver\n\n"
+
+        "📊 Статистика:\n"
+        "/stats"
     )
 
 
 
-# Статистика
+# =========================
+# ПРОМОКОДЫ
+# =========================
 
+
+@router.message(Command("createpromo"))
+async def createpromo(message: Message):
+
+    if not is_admin(message.from_user.id):
+        return
+
+
+    await message.answer(
+        "🎫 Создание промокода:\n\n"
+
+        "Формат:\n"
+        "КОД СУММА КОЛИЧЕСТВО\n\n"
+
+        "Пример:\n"
+        "PULSAR100 100 20"
+    )
+
+
+
+# =========================
+# ВЫДАЧА БАЛАНСА
+# =========================
+
+
+@router.message(Command("givebalance"))
+async def givebalance(message: Message):
+
+    if not is_admin(message.from_user.id):
+        return
+
+
+    await message.answer(
+        "💰 Выдача баланса:\n\n"
+
+        "Формат:\n"
+        "ID СУММА\n\n"
+
+        "Пример:\n"
+        "123456789 500"
+    )
+
+
+
+# =========================
+# ВЫДАЧА СЕРВЕРА
+# =========================
+
+
+@router.message(Command("giveserver"))
+async def giveserver(message: Message):
+
+    if not is_admin(message.from_user.id):
+        return
+
+
+    await message.answer(
+        "🖥 Выдача сервера:\n\n"
+
+        "Формат:\n"
+        "ID ТАРИФ\n\n"
+
+        "Пример:\n"
+        "123456789 PRO"
+    )
+
+
+
+# =========================
+# СТАТИСТИКА
+# =========================
+
+
+@router.message(Command("stats"))
 async def stats(message: Message):
+
+    if not is_admin(message.from_user.id):
+        return
+
 
     conn = connect()
     cursor = conn.cursor()
@@ -55,121 +146,35 @@ async def stats(message: Message):
         "SELECT COUNT(*) FROM users"
     )
 
-    users_count = cursor.fetchone()[0]
+    users = cursor.fetchone()[0]
 
 
     cursor.execute(
         "SELECT COUNT(*) FROM servers"
     )
 
-    servers_count = cursor.fetchone()[0]
+    servers = cursor.fetchone()[0]
 
 
     conn.close()
 
 
     await message.answer(
-        "📊 Статистика PulSar-Host\n\n"
-        f"👥 Пользователи: {users_count}\n"
-        f"🖥 Серверы: {servers_count}"
+        "📊 PulSar-Host статистика\n\n"
+
+        f"👥 Пользователей: {users}\n"
+        f"🖥 Серверов: {servers}"
     )
 
 
 
-@router.message(Command("stats"))
-async def stats_command(message: Message):
-
-    if is_admin(message.from_user.id):
-        await stats(message)
+# =========================
+# ОБРАБОТКА ДАННЫХ АДМИНА
+# =========================
 
 
-
-# Пользователи
-
-async def users(message: Message):
-
-    conn = connect()
-    cursor = conn.cursor()
-
-
-    cursor.execute(
-        "SELECT id, username FROM users LIMIT 20"
-    )
-
-    data = cursor.fetchall()
-
-    conn.close()
-
-
-    text = "👥 Пользователи:\n\n"
-
-
-    for user in data:
-
-        text += (
-            f"🆔 ID: {user[0]}\n"
-            f"👤 @{user[1]}\n\n"
-        )
-
-
-    await message.answer(text)
-
-
-
-@router.message(Command("users"))
-async def users_command(message: Message):
-
-    if is_admin(message.from_user.id):
-        await users(message)
-
-
-
-# Серверы
-
-async def servers(message: Message):
-
-    conn = connect()
-    cursor = conn.cursor()
-
-
-    cursor.execute(
-        "SELECT id,name,plan,status FROM servers"
-    )
-
-    data = cursor.fetchall()
-
-    conn.close()
-
-
-    text = "🖥 Серверы:\n\n"
-
-
-    for server in data:
-
-        text += (
-            f"🆔 ID: {server[0]}\n"
-            f"📌 {server[1]}\n"
-            f"📦 {server[2]}\n"
-            f"⚡ {server[3]}\n\n"
-        )
-
-
-    await message.answer(text)
-
-
-
-@router.message(Command("servers"))
-async def servers_command(message: Message):
-
-    if is_admin(message.from_user.id):
-        await servers(message)
-
-
-
-# Выдача баланса
-
-@router.message(Command("give"))
-async def give(message: Message):
+@router.message()
+async def admin_actions(message: Message):
 
     if not is_admin(message.from_user.id):
         return
@@ -178,98 +183,64 @@ async def give(message: Message):
     args = message.text.split()
 
 
-    if len(args) != 3:
 
-        await message.answer(
-            "Использование:\n"
-            "/give ID СУММА"
-        )
+    # Создание промокода
+    # PULSAR100 100 20
 
-        return
+    if len(args) == 3:
 
+        try:
 
-    user_id = int(args[1])
-    amount = int(args[2])
-
-
-    add_balance(
-        user_id,
-        amount
-    )
+            code = args[0]
+            amount = int(args[1])
+            uses = int(args[2])
 
 
-    await message.answer(
-        "✅ Баланс выдан\n\n"
-        f"👤 ID: {user_id}\n"
-        f"💰 +{amount}₽"
-    )
+            create_promo(
+                code,
+                amount,
+                uses
+            )
 
 
+            await message.answer(
+                "✅ Промокод создан!\n\n"
 
-# Создание промокода
-
-@router.message(Command("promo_create"))
-async def promo_create(message: Message):
-
-    if not is_admin(message.from_user.id):
-        return
-
-
-    args = message.text.split()
+                f"🎫 Код: {code}\n"
+                f"💰 Бонус: {amount}₽\n"
+                f"🔢 Использований: {uses}"
+            )
 
 
-    if len(args) != 4:
-
-        await message.answer(
-            "Формат:\n"
-            "/promo_create КОД СУММА КОЛИЧЕСТВО"
-        )
-
-        return
-
-
-    create_promo(
-        args[1],
-        int(args[2]),
-        int(args[3])
-    )
-
-
-    await message.answer(
-        "🎫 Промокод создан!"
-    )
+        except:
+            pass
 
 
 
-# Кнопки админки
+    # Выдача баланса
+    # 123456789 500
 
-@router.message(lambda m: m.text == "📊 Статистика")
-async def stats_button(message: Message):
+    elif len(args) == 2:
 
-    if is_admin(message.from_user.id):
-        await stats(message)
+        try:
 
-
-
-@router.message(lambda m: m.text == "👥 Пользователи")
-async def users_button(message: Message):
-
-    if is_admin(message.from_user.id):
-        await users(message)
+            user_id = int(args[0])
+            amount = int(args[1])
 
 
-
-@router.message(lambda m: m.text == "🖥 Серверы")
-async def servers_button(message: Message):
-
-    if is_admin(message.from_user.id):
-        await servers(message)
+            add_balance(
+                user_id,
+                amount
+            )
 
 
+            await message.answer(
+                "✅ Баланс выдан!\n\n"
 
-@router.message(lambda m: m.text == "⬅️ Выйти из админки")
-async def exit_admin(message: Message):
+                f"👤 ID: {user_id}\n"
+                f"💰 Сумма: {amount}₽"
+            )
 
-    await message.answer(
-        "✅ Вы вышли из админ-панели"
-        )
+
+        except:
+            pass
