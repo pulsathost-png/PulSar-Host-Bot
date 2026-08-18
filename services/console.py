@@ -1,28 +1,58 @@
 from database import connect
+from datetime import datetime
 
 
-def get_server(server_id):
+def save_console_log(server_id, command):
+
     conn = connect()
     cursor = conn.cursor()
 
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS console_logs (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        server_id INTEGER,
+        command TEXT,
+        date TEXT
+    )
+    """)
+
     cursor.execute(
-        "SELECT * FROM servers WHERE id=?",
-        (server_id,)
+        """
+        INSERT INTO console_logs
+        (server_id, command, date)
+        VALUES (?, ?, ?)
+        """,
+        (
+            server_id,
+            command,
+            datetime.now().strftime("%d.%m.%Y %H:%M")
+        )
     )
 
-    server = cursor.fetchone()
-
+    conn.commit()
     conn.close()
 
-    return server
 
 
-def send_command(server_id, command):
-    # Пока тестовая консоль
-    # позже подключим настоящий сервер
+def execute_command(server_id, command):
 
-    return (
-        f"📟 Сервер ID: {server_id}\n"
-        f"▶ Команда: {command}\n\n"
-        f"✅ Команда выполнена"
+    save_console_log(
+        server_id,
+        command
     )
+
+    # Пока тестовая обработка
+    if command == "status":
+        return "🟢 Сервер работает\nИгроков: 0"
+
+    elif command == "stop":
+        return "⏹ Сервер остановлен"
+
+    elif command == "restart":
+        return "🔄 Сервер перезапущен"
+
+    else:
+        return (
+            f"📟 Выполнена команда:\n"
+            f"{command}"
+        )
