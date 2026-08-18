@@ -31,6 +31,10 @@ from services.server_manager import (
     restart
 )
 
+from services.console import (
+    execute_command
+)
+
 from services.plans import get_plan
 
 from keyboard import (
@@ -46,6 +50,7 @@ dp = Dispatcher()
 dp.include_router(admin_router)
 
 
+
 @dp.message(Command("start"))
 async def start_command(message: Message):
 
@@ -56,22 +61,9 @@ async def start_command(message: Message):
 
     await message.answer(
         "🚀 PulSar-Host 1.0\n\n"
-        "🎮 Игровой хостинг через Telegram\n\n"
-        "Выберите действие:",
+        "🎮 Игровой хостинг в Telegram\n\n"
+        "Выберите действие 👇",
         reply_markup=main_menu
-    )
-
-
-
-@dp.message(lambda m: m.text == "💰 Баланс")
-async def balance(message: Message):
-
-    money = get_balance(
-        message.from_user.id
-    )
-
-    await message.answer(
-        f"💰 Баланс: {money}₽"
     )
 
 
@@ -81,7 +73,16 @@ async def profile(message: Message):
 
     await message.answer(
         "👤 Профиль\n\n"
-        f"ID: {message.from_user.id}\n"
+        f"🆔 ID: {message.from_user.id}\n"
+        f"💰 Баланс: {get_balance(message.from_user.id)}₽"
+    )
+
+
+
+@dp.message(lambda m: m.text == "💰 Баланс")
+async def balance(message: Message):
+
+    await message.answer(
         f"💰 Баланс: {get_balance(message.from_user.id)}₽"
     )
 
@@ -98,19 +99,19 @@ async def buy_menu(message: Message):
 
 
 @dp.message(lambda m: m.text == "🟢 START - 50₽")
-async def start_plan(message: Message):
+async def buy_start(message: Message):
     await buy_plan(message, "START")
 
 
 
 @dp.message(lambda m: m.text == "🔵 PRO - 100₽")
-async def pro_plan(message: Message):
+async def buy_pro(message: Message):
     await buy_plan(message, "PRO")
 
 
 
 @dp.message(lambda m: m.text == "🟣 ULTRA - 500₽")
-async def ultra_plan(message: Message):
+async def buy_ultra(message: Message):
     await buy_plan(message, "ULTRA")
 
 
@@ -123,10 +124,14 @@ async def buy_plan(message, plan_name):
         message.from_user.id
     )
 
+
     if money < plan["price"]:
+
         await message.answer(
-            "❌ Недостаточно денег"
+            "❌ Недостаточно средств\n\n"
+            f"Нужно: {plan['price']}₽"
         )
+
         return
 
 
@@ -163,9 +168,11 @@ async def servers(message: Message):
 
 
     if not data:
+
         await message.answer(
             "❌ Серверов нет"
         )
+
         return
 
 
@@ -173,25 +180,28 @@ async def servers(message: Message):
 
 
     for s in data:
+
         text += (
             f"🆔 ID: {s[0]}\n"
-            f"📌 Название: {s[1]}\n"
+            f"📌 {s[1]}\n"
             f"📦 Тариф: {s[2]}\n"
             f"⚡ Статус: {s[3]}\n"
             f"📅 Создан: {s[4]}\n"
             f"⏳ Дней: {s[5]}\n\n"
         )
 
+
     await message.answer(text)
 
 
 
 @dp.message(lambda m: m.text == "▶️ Запустить сервер")
-async def start_server_button(message: Message):
+async def start_server(message: Message):
 
     servers = user_servers(
         message.from_user.id
     )
+
 
     if not servers:
         await message.answer(
@@ -207,11 +217,12 @@ async def start_server_button(message: Message):
 
 
 @dp.message(lambda m: m.text == "⏹ Остановить сервер")
-async def stop_server_button(message: Message):
+async def stop_server(message: Message):
 
     servers = user_servers(
         message.from_user.id
     )
+
 
     if not servers:
         await message.answer(
@@ -227,11 +238,12 @@ async def stop_server_button(message: Message):
 
 
 @dp.message(lambda m: m.text == "🔄 Перезапустить сервер")
-async def restart_server_button(message: Message):
+async def restart_server(message: Message):
 
     servers = user_servers(
         message.from_user.id
     )
+
 
     if not servers:
         await message.answer(
@@ -246,38 +258,84 @@ async def restart_server_button(message: Message):
 
 
 
+@dp.message(lambda m: m.text == "📟 Консоль")
+async def console(message: Message):
+
+    await message.answer(
+        "📟 Консоль\n\n"
+        "Используйте:\n"
+        "/cmd status"
+    )
+
+
+
+@dp.message(Command("cmd"))
+async def command(message: Message):
+
+    servers = user_servers(
+        message.from_user.id
+    )
+
+
+    if not servers:
+        await message.answer(
+            "❌ Нет серверов"
+        )
+        return
+
+
+    command = message.text.replace(
+        "/cmd ",
+        ""
+    )
+
+
+    result = execute_command(
+        servers[0][0],
+        command
+    )
+
+
+    await message.answer(result)
+
+
+
 @dp.message(Command("promo"))
 async def promo(message: Message):
 
     args = message.text.split()
 
+
     if len(args) < 2:
         await message.answer(
-            "/promo КОД"
+            "Используйте:\n/promo КОД"
         )
         return
 
 
-    promo_data = get_promo(args[1])
+    data = get_promo(args[1])
 
 
-    if not promo_data:
+    if not data:
+
         await message.answer(
             "❌ Промокод не найден"
         )
+
         return
 
 
     add_balance(
         message.from_user.id,
-        promo_data[1]
+        data[1]
     )
+
 
     use_promo(args[1])
 
 
     await message.answer(
-        f"✅ +{promo_data[1]}₽"
+        f"✅ Получено +{data[1]}₽"
     )
 
 
@@ -286,7 +344,7 @@ async def promo(message: Message):
 async def promo_button(message: Message):
 
     await message.answer(
-        "🎫 Используйте:\n/promo КОД"
+        "🎫 Введите:\n/promo КОД"
     )
 
 
@@ -313,7 +371,7 @@ async def main():
 
     create_tables()
 
-    print("🚀 PulSar-Host Bot 1.0 запущен")
+    print("🚀 PulSar-Host Bot запущен")
 
     await dp.start_polling(bot)
 
