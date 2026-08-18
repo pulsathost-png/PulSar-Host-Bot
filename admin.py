@@ -26,9 +26,9 @@ async def admin_panel(message: Message):
     await message.answer(
         "🛡 PulSar-Host Admin Panel\n\n"
         "Команды:\n\n"
-        "🎫 /createpromo\n"
-        "💰 /givebalance\n"
-        "📊 /stats"
+        "🎫 /createpromo — создать промокод\n"
+        "💰 /givebalance — выдать баланс\n"
+        "📊 /stats — статистика"
     )
 
 
@@ -54,7 +54,7 @@ async def givebalance(message: Message):
         return
 
     await message.answer(
-        "💰 Выдача денег:\n\n"
+        "💰 Выдача баланса:\n\n"
         "Формат:\n"
         "ID СУММА\n\n"
         "Пример:\n"
@@ -91,21 +91,52 @@ async def admin_actions(message: Message):
     if not is_admin(message.from_user.id):
         return
 
-    text = message.text.split()
+    args = message.text.split()
 
-    # создание промокода
-    if len(text) == 3:
+    # Создание промокода:
+    # PULSAR100 100 20
+    if len(args) == 3:
 
-        code = text[0]
-        amount = int(text[1])
-        uses = int(text[2])
+        try:
+            code = args[0]
+            amount = int(args[1])
+            uses = int(args[2])
 
-        create_promo(
-            code,
-            amount,
-            uses
-        )
+            create_promo(
+                code,
+                amount,
+                uses
+            )
 
-        await message.answer(
-            "✅ Промокод создан!"
-    )
+            await message.answer(
+                "✅ Промокод создан!\n\n"
+                f"🎫 Код: {code}\n"
+                f"💰 Бонус: {amount}₽\n"
+                f"🔢 Использований: {uses}"
+            )
+
+        except:
+            pass
+
+
+    # Выдача баланса:
+    # 123456789 500
+    elif len(args) == 2:
+
+        try:
+            user_id = int(args[0])
+            amount = int(args[1])
+
+            add_balance(
+                user_id,
+                amount
+            )
+
+            await message.answer(
+                "✅ Баланс выдан!\n\n"
+                f"👤 ID: {user_id}\n"
+                f"💰 Сумма: {amount}₽"
+            )
+
+        except:
+            pass
