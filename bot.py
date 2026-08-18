@@ -5,7 +5,13 @@ from aiogram.types import Message
 from aiogram.filters import Command
 
 from config import BOT_TOKEN
-from database import create_tables
+from database import (
+    create_tables,
+    add_user,
+    get_balance,
+    add_balance
+)
+
 from admin import router as admin_router
 from services.promo import get_promo, use_promo
 
@@ -14,20 +20,32 @@ bot = Bot(token=BOT_TOKEN)
 
 dp = Dispatcher()
 
-# Подключаем админ-панель
 dp.include_router(admin_router)
 
 
 @dp.message(Command("start"))
 async def start(message: Message):
+    add_user(
+        message.from_user.id,
+        message.from_user.username
+    )
+
     await message.answer(
         "🚀 Добро пожаловать в PulSar-Host!\n\n"
-        "🎮 Игровой хостинг через Telegram\n"
-        "Версия: 1.0\n\n"
+        "🎮 Игровой хостинг через Telegram\n\n"
         "Команды:\n"
-        "/start — запуск\n"
+        "/balance — мой баланс\n"
         "/promo КОД — активировать промокод\n"
         "/admin — админ-панель"
+    )
+
+
+@dp.message(Command("balance"))
+async def balance(message: Message):
+    money = get_balance(message.from_user.id)
+
+    await message.answer(
+        f"💰 Ваш баланс: {money}₽"
     )
 
 
@@ -58,25 +76,30 @@ async def promo_activate(message: Message):
         )
         return
 
+    add_balance(
+        message.from_user.id,
+        promo[1]
+    )
+
     use_promo(code)
 
     await message.answer(
         f"✅ Промокод активирован!\n\n"
-        f"💰 Бонус: {promo[1]}₽"
+        f"💰 На баланс добавлено: {promo[1]}₽"
     )
 
 
 @dp.message()
 async def message_handler(message: Message):
     await message.answer(
-        "Используй /start для открытия меню."
+        "Используй /start"
     )
 
 
 async def main():
     create_tables()
 
-    print("🚀 PulSar-Host Bot запущен!")
+    print("🚀 PulSar-Host Bot 1.0 запущен!")
 
     await dp.start_polling(bot)
 
